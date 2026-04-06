@@ -3,23 +3,26 @@ package com.user.manage.service;
 import com.user.manage.entity.RefreshToken;
 import com.user.manage.entity.User;
 import com.user.manage.exception.TokenException;
-import com.user.manage.repository.RefreshTokenRepository;
+import com.user.manage.repository.UserRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * Redis를 이용한 Refresh Token 관리 (선택 과제).
- * Redis에 저장 (key: refresh_token:{userId}, TTL 자동 만료) + DB에도 동기화.
- * @Primary 로 기본 구현체로 사용.
+ * Redis 전용 Refresh Token 관리 (선택 과제).
+ * DB를 사용하지 않고 Redis만으로 토큰을 관리합니다.
+ *
+ * 저장 구조:
+ *   refresh_token:{userId}       → UUID  (유저 → 토큰)
+ *   refresh_token_lookup:{UUID}  → userId (토큰 → 유저, 역방향)
  */
 @Primary
 @Profile("!test")
@@ -28,51 +31,63 @@ import java.util.UUID;
 public class RedisRefreshTokenService implements RefreshTokenService {
 
     private final RedisTemplate<String, String> redisTemplate;
-    private final RefreshTokenRepository refreshTokenRepository;
+    private final UserRepository userRepository;
 
     @Value("${jwt.refresh-token-expiry-ms}")
     private long refreshTokenExpiryMs;
 
-    private String redisKey(Long userId) {
+    private String userKey(Long userId) {
         return "refresh_token:" + userId;
     }
 
+    private String lookupKey(String token) {
+        return "refresh_token_lookup:" + token;
+    }
+
     @Override
-    @Transactional
     public RefreshToken createRefreshToken(User user) {
         String tokenValue = UUID.randomUUID().toString();
         Duration ttl = Duration.ofMillis(refreshTokenExpiryMs);
 
-        redisTemplate.opsForValue().set(redisKey(user.getId()), tokenValue, ttl);
+        // 기존 토큰 제거 (rotation)
+        String oldToken = redisTemplate.opsForValue().get(userKey(user.getId()));
+        if (oldToken != null) {
+            redisTemplate.delete(lookupKey(oldToken));
+        }
 
-        refreshTokenRepository.findByUser(user).ifPresent(refreshTokenRepository::delete);
-        RefreshToken refreshToken = RefreshToken.builder()
+        redisTemplate.opsForValue().set(userKey(user.getId()), tokenValue, ttl);
+        redisTemplate.opsForValue().set(lookupKey(tokenValue), String.valueOf(user.getId()), ttl);
+
+        return RefreshToken.builder()
                 .user(user)
                 .token(tokenValue)
                 .expiresAt(LocalDateTime.now().plus(ttl))
                 .build();
-
-        return refreshTokenRepository.save(refreshToken);
     }
 
     @Override
     public RefreshToken verifyRefreshToken(String tokenValue) {
-        RefreshToken token = refreshTokenRepository.findByToken(tokenValue)
-                .orElseThrow(TokenException::notFound);
-
-        String redisValue = redisTemplate.opsForValue().get(redisKey(token.getUser().getId()));
-        if (redisValue == null || !redisValue.equals(tokenValue)) {
-            refreshTokenRepository.delete(token);
+        String userId = redisTemplate.opsForValue().get(lookupKey(tokenValue));
+        if (userId == null) {
             throw TokenException.expired();
         }
 
-        return token;
+        User user = userRepository.findById(Long.parseLong(userId))
+                .orElseThrow(() -> new EntityNotFoundException("사용자를 찾을 수 없습니다."));
+
+        return RefreshToken.builder()
+                .user(user)
+                .token(tokenValue)
+                .expiresAt(LocalDateTime.now().plusSeconds(refreshTokenExpiryMs / 1000))
+                .build();
     }
 
     @Override
-    @Transactional
     public void deleteByUser(User user) {
-        redisTemplate.delete(redisKey(user.getId()));
-        refreshTokenRepository.deleteByUser(user);
+        String tokenValue = redisTemplate.opsForValue().get(userKey(user.getId()));
+        if (tokenValue != null) {
+            redisTemplate.delete(lookupKey(tokenValue));
+        }
+        redisTemplate.delete(userKey(user.getId()));
     }
 }
