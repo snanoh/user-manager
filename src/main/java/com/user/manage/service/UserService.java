@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -19,5 +21,12 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("사용자를 찾을 수 없습니다: " + userId));
         return UserInfoResponse.from(user);
+    }
+
+    @Transactional(readOnly = true)
+    public List<UserInfoResponse> getAllUsers() {
+        return userRepository.findAll().stream()
+                .map(UserInfoResponse::from)
+                .toList();
     }
 }
