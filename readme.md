@@ -136,7 +136,7 @@ Authorization: Bearer {accessToken}
 
 ### JWT: Access Token + Refresh Token 분리
 - **Access Token**: 짧은 만료(15분), Stateless 검증
-- **Refresh Token**: UUID (JWT 아님) → DB/Redis에 저장하여 즉시 폐기 가능
+- **Refresh Token**: UUID (JWT 아님) → Redis에 저장하여 즉시 폐기 가능
 - JWT로 Refresh Token을 만들면 만료 전 강제 폐기가 불가능하므로 UUID 선택
 
 ### Refresh Token Rotation
@@ -148,9 +148,8 @@ Authorization: Bearer {accessToken}
 - O(1) 조회 성능
 - DB와 이중 저장으로 데이터 무결성 유지
 
-### BCrypt 비밀번호 해시
-- 단방향 해시, Salt 자동 포함 → Rainbow table 공격 방어
-- Argon2가 더 안전하나 과제 명세의 예시를 따라 BCrypt 선택
+### Argon2 비밀번호 해시
+- BCrypt는 취약점이 나온 이력이 있고 agron2가 더 안전하여 argon2를 선택
 
 ### Rate Limiting (Bucket4j)
 - IP 단위 분당 20회 제한
@@ -159,7 +158,6 @@ Authorization: Bearer {accessToken}
 
 ### Spring Data JPA
 - 타입 안전한 쿼리, 자동 DDL 관리
-- JPQL/Criteria 대비 Spring Data 메서드 쿼리로 생산성 향상
 
 ---
 
