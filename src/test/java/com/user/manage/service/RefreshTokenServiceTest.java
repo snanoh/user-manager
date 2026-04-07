@@ -4,6 +4,7 @@ import com.user.manage.entity.RefreshToken;
 import com.user.manage.entity.User;
 import com.user.manage.exception.TokenException;
 import com.user.manage.repository.RefreshTokenRepository;
+import com.user.manage.service.impl.DbRefreshTokenServiceImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,7 +24,8 @@ class RefreshTokenServiceTest {
 
     @Mock RefreshTokenRepository refreshTokenRepository;
 
-    @InjectMocks DbRefreshTokenService refreshTokenService;
+    @InjectMocks
+    DbRefreshTokenServiceImpl refreshTokenService;
 
     private User testUser() {
         return User.builder().email("test@example.com").password("hash").build();

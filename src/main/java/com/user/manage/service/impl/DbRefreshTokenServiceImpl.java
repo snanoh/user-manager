@@ -1,9 +1,10 @@
-package com.user.manage.service;
+package com.user.manage.service.impl;
 
 import com.user.manage.entity.RefreshToken;
 import com.user.manage.entity.User;
 import com.user.manage.exception.TokenException;
 import com.user.manage.repository.RefreshTokenRepository;
+import com.user.manage.service.RefreshTokenService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -14,7 +15,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class DbRefreshTokenService implements RefreshTokenService {
+public class DbRefreshTokenServiceImpl implements RefreshTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
 

@@ -9,7 +9,6 @@ import com.user.manage.entity.User;
 import com.user.manage.exception.DuplicateEmailException;
 import com.user.manage.exception.InvalidCredentialsException;
 import com.user.manage.repository.UserRepository;
-import com.user.manage.security.CustomUserDetails;
 import com.user.manage.security.UserDetailsServiceImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,7 +24,6 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -34,7 +32,8 @@ class AuthServiceTest {
     @Mock UserRepository userRepository;
     @Mock PasswordEncoder passwordEncoder;
     @Mock JwtService jwtService;
-    @Mock RefreshTokenService refreshTokenService;
+    @Mock
+    RefreshTokenService refreshTokenService;
     @Mock UserDetailsServiceImpl userDetailsService;
 
     @InjectMocks AuthService authService;

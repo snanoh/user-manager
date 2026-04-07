@@ -1,9 +1,10 @@
-package com.user.manage.service;
+package com.user.manage.service.impl;
 
 import com.user.manage.entity.RefreshToken;
 import com.user.manage.entity.User;
 import com.user.manage.exception.TokenException;
 import com.user.manage.repository.UserRepository;
+import com.user.manage.service.RefreshTokenService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,7 +29,7 @@ import java.util.UUID;
 @Profile("!test")
 @Service
 @RequiredArgsConstructor
-public class RedisRefreshTokenService implements RefreshTokenService {
+public class RedisRefreshTokenServiceImpl implements RefreshTokenService {
 
     private final RedisTemplate<String, String> redisTemplate;
     private final UserRepository userRepository;
